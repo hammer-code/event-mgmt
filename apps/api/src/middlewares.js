@@ -1,12 +1,13 @@
 const jwt = require('jsonwebtoken');
 const userService = require('./services/user');
 const { isPermitted } = require('./lib/role-permissions');
+const { AuthenticationError, AuthorizationError } = require('./lib/errors');
 
 async function shouldAuthenticated(request, response, next) {
   const authHeader = request.header('Authorization');
 
   if (!authHeader) {
-    return next(new Error('Authorization header is not present'))
+    return next(new AuthenticationError('Authorization header is not present'))
   }
 
   const [, token] = authHeader.split('Bearer ')
@@ -16,13 +17,13 @@ async function shouldAuthenticated(request, response, next) {
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET)
   } catch (error) {
-    return next(error)
+    return next(new AuthenticationError('Not valid token'))
   }
 
   const foundUser = await userService.findById(decoded.userId)
 
   if (!foundUser) {
-    return next(Error('User not found'))
+    return next(new AuthenticationError('User was not found'))
   }
 
   request.userId = decoded.userId
@@ -35,7 +36,7 @@ function createShouldAuthorized (permission) {
     const user = await userService.findById(request.userId)
 
     if (!isPermitted(permission, user)) {
-      return next(new Error('You are not allowed to access/perform action'))
+      return next(new AuthorizationError('You are not allowed to access/perform action'))
     }
 
     next()
