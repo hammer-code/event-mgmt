@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    volumes:
+      - ./:/code
+    ports:
+      - 3030:3030
+      - 4040:4040
+      - 8080:8080
+    depends_on:
+      - mongodb
+  mongodb:
+    image: mongo:jessie
+    volumes:
+      - ./mongo-volume:/data/db
+    ports:
+      - 27018:27017
